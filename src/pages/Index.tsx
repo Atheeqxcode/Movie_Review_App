@@ -1,12 +1,28 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { MovieHero } from "@/components/movie-hero";
+import { MovieGrid } from "@/components/movie-grid";
 
 const Index = () => {
+  const [showMovies, setShowMovies] = useState(false);
+
+  const handleGetStarted = () => {
+    setShowMovies(true);
+    // Smooth scroll to movies section
+    setTimeout(() => {
+      const moviesSection = document.getElementById('movies-section');
+      moviesSection?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-cinema-dark">
+      <MovieHero onGetStarted={handleGetStarted} />
+      
+      {showMovies && (
+        <div id="movies-section" className="bg-gradient-to-b from-cinema-dark to-cinema-darker">
+          <MovieGrid />
+        </div>
+      )}
     </div>
   );
 };
