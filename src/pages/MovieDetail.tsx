@@ -20,6 +20,9 @@ export default function MovieDetail() {
   const [showEditForm, setShowEditForm] = useState(false);
   
   const movie = id ? getMovie(id) : null;
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiConsensus, setAiConsensus] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState("");
   
   if (!movie) {
     return (
@@ -65,6 +68,47 @@ export default function MovieDetail() {
 
   return (
     <div className="min-h-screen bg-cinema-dark">
+      <div className="container mx-auto px-4 py-8">
+        <Button
+          variant="cinema"
+          className="mb-4"
+          disabled={aiLoading}
+          onClick={async () => {
+            setAiLoading(true);
+            try {
+              const consensusRes = await fetch("/api/ai/summarize-reviews", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reviews: movie.reviews.map(r => r.text) })
+              });
+              const consensusData = await consensusRes.json();
+              setAiConsensus(consensusData.consensus);
+              const suggRes = await fetch("/api/ai/suggest-movies", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ genre: movie.genre })
+              });
+              const suggData = await suggRes.json();
+              setAiSuggestions(suggData.suggestions);
+            } catch (err) {
+              toast({ title: "AI Assist Error", description: String(err) });
+            }
+            setAiLoading(false);
+          }}
+        >
+          {aiLoading ? "AI Assist..." : "AI Assist"}
+        </Button>
+        {aiConsensus && (
+          <div className="mt-2 p-4 bg-cinema-darker rounded">
+            <strong>AI Review Consensus:</strong> {aiConsensus}
+          </div>
+        )}
+        {aiSuggestions && (
+          <div className="mt-2 p-4 bg-cinema-darker rounded">
+            <strong>AI Suggestions:</strong> {aiSuggestions}
+          </div>
+        )}
+      </div>
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
