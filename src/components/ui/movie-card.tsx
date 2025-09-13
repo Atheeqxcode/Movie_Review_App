@@ -1,4 +1,6 @@
 import { Star, Edit, Trash2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useState } from "react";
 import { Badge } from "./badge";
 import { Button } from "./button";
 import { Card, CardContent } from "./card";
@@ -14,6 +16,9 @@ interface MovieCardProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onView?: (id: string) => void;
+  userRating?: number;
+  onRate?: (rating: number) => void;
+  isActive?: boolean;
 }
 
 export function MovieCard({
@@ -22,14 +27,18 @@ export function MovieCard({
   poster,
   genre,
   year,
-  rating = 0,
+  rating,
   description,
   onEdit,
   onDelete,
   onView,
+  userRating = 0,
+  onRate,
+  isActive = false,
 }: MovieCardProps) {
+
   return (
-    <Card className="group bg-gradient-card border-cinema-purple/20 hover:border-cinema-purple/50 transition-all duration-300 hover:shadow-cinema cursor-pointer overflow-hidden">
+    <Card className="group bg-gradient-card border-cinema-purple/20 hover:border-cinema-purple/50 transition-all duration-300 hover:shadow-cinema cursor-pointer overflow-hidden transform hover:scale-110">
       <div className="relative overflow-hidden">
         <img
           src={poster}
@@ -68,6 +77,15 @@ export function MovieCard({
         <Badge variant="outline" className="mb-3 border-cinema-blue/50 text-cinema-blue">
           {genre}
         </Badge>
+        <div className="flex gap-1 mb-2">
+          {[1,2,3,4,5].map((star) => (
+            <Star
+              key={star}
+              className={`h-5 w-5 cursor-pointer ${isActive && userRating > 0 && star <= userRating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+              onClick={() => isActive && onRate?.(star)}
+            />
+          ))}
+        </div>
         <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
       </CardContent>
     </Card>

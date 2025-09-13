@@ -1,27 +1,61 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MovieCard } from "@/components/ui/movie-card";
 import { SearchFilters } from "@/components/ui/search-filters";
 import { MovieForm } from "@/components/ui/movie-form";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { useMovies, type Movie } from "@/hooks/useMovies";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "../context/AuthContext";
 
 export function MovieGrid() {
   const navigate = useNavigate();
   const { movies, loading, addMovie, updateMovie, deleteMovie } = useMovies();
   const { toast } = useToast();
+  const { user } = useAuth();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("All Genres");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMovie, setEditingMovie] = useState<Movie | undefined>();
   const [movieToDelete, setMovieToDelete] = useState<string | null>(null);
 
+  // ratings & reviews
+  const [userRatings, setUserRatings] = useState<Record<string, number>>({});
+  const [activeReviews, setActiveReviews] = useState<Record<string, string>>({});
+
+  // Fetch user ratings on mount
+  useEffect(() => {
+    const fetchRatings = async () => {
+      if (user) {
+        const res = await fetch(`/api/reviews/user/${user._id}`);
+        const data = await res.json();
+        const ratings: Record<string, number> = {};
+        data.forEach((review: any) => {
+          ratings[review.movieId] = review.rating;
+        });
+        setUserRatings(ratings);
+      }
+    };
+    fetchRatings();
+  }, [user]);
+
   // Filter movies based on search and genre
-  const filteredMovies = movies.filter(movie => {
-    const matchesSearch = movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         movie.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGenre = selectedGenre === "All Genres" || movie.genre === selectedGenre;
+  const filteredMovies = movies.filter((movie) => {
+    const matchesSearch =
+      movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      movie.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesGenre =
+      selectedGenre === "All Genres" || movie.genre === selectedGenre;
     return matchesSearch && matchesGenre;
   });
 
@@ -31,7 +65,7 @@ export function MovieGrid() {
   };
 
   const handleEditMovie = (id: string) => {
-    const movie = movies.find(m => m.id === id);
+    const movie = movies.find((m) => m.id === id);
     setEditingMovie(movie);
     setIsFormOpen(true);
   };
@@ -47,7 +81,7 @@ export function MovieGrid() {
     }
   };
 
-  const handleSaveMovie = (movieData: Omit<Movie, 'id' | 'reviews'>) => {
+  const handleSaveMovie = (movieData: Omit<Movie, "id" | "reviews">) => {
     if (editingMovie) {
       updateMovie(editingMovie.id, movieData);
       toast({
@@ -65,6 +99,37 @@ export function MovieGrid() {
 
   const handleViewMovie = (id: string) => {
     navigate(`/movie/${id}`);
+  };
+
+  // ⭐ Rating handler
+  const handleRate = (movieId: string, rating: number) => {
+    setUserRatings((prev) => ({ ...prev, [movieId]: rating }));
+  };
+
+  // ✍ Review handlers
+  const handleReviewChange = (movieId: string, value: string) => {
+    setActiveReviews((prev) => ({ ...prev, [movieId]: value }));
+  };
+
+  const handleReviewSubmit = async (movieId: string) => {
+    const user = window.localStorage.getItem("user") && JSON.parse(window.localStorage.getItem("user")!);
+    if (!user) return;
+
+    const review = {
+      userId: user._id,
+      movieId,
+      rating: userRatings[movieId] || 0,
+      text: activeReviews[movieId] || "",
+      timestamp: new Date().toISOString(),
+    };
+
+    await fetch(`/api/reviews/${movieId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(review),
+    });
+
+    setActiveReviews((prev) => ({ ...prev, [movieId]: "" }));
   };
 
   if (loading) {
@@ -98,11 +163,11 @@ export function MovieGrid() {
         {filteredMovies.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-lg text-muted-foreground mb-4">
-              {searchQuery || selectedGenre !== "All Genres" 
-                ? "No movies found matching your criteria." 
+              {searchQuery || selectedGenre !== "All Genres"
+                ? "No movies found matching your criteria."
                 : "No movies in your collection yet."}
             </p>
-            <button 
+            <button
               onClick={handleAddMovie}
               className="text-cinema-purple hover:text-cinema-blue transition-colors"
             >
@@ -118,7 +183,25 @@ export function MovieGrid() {
                   onEdit={handleEditMovie}
                   onDelete={(id) => setMovieToDelete(id)}
                   onView={handleViewMovie}
+                  userRating={userRatings[movie.id] || 0}   // each movie has its own rating
+                  onRate={(rating: number) => handleRate(movie.id, rating)}
+                  isActive={true} // always allow rating
                 />
+                <div className="mt-4">
+                  <input
+                    type="text"
+                    value={activeReviews[movie.id] || ""}
+                    onChange={(e) => handleReviewChange(movie.id, e.target.value)}
+                    placeholder="Write your review..."
+                    className="w-full p-2 rounded border border-cinema-purple text-black"
+                  />
+                  <button
+                    className="mt-2 px-4 py-2 bg-cinema-purple text-white rounded"
+                    onClick={() => handleReviewSubmit(movie.id)}
+                  >
+                    Submit Review
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -141,7 +224,10 @@ export function MovieGrid() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteMovie} className="bg-destructive hover:bg-destructive/90">
+              <AlertDialogAction
+                onClick={handleDeleteMovie}
+                className="bg-destructive hover:bg-destructive/90"
+              >
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>

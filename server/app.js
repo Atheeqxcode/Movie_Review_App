@@ -5,6 +5,9 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import aiRoutes from './routes/ai.js';
 import moviesRoutes from './routes/movies.js';
+import authRoutes from './routes/auth.js';
+import reviewRoutes from './routes/reviews.js';
+import watchlistRoutes from './routes/watchlist.js';
 
 const app = express();
 
@@ -17,5 +20,8 @@ app.use(cors());
 
 app.use('/api/ai', aiRoutes);
 app.use('/api/movies', moviesRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/watchlist', watchlistRoutes);
 
 app.listen(5000, () => console.log('Server running on port 5000'));
