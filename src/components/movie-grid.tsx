@@ -1,16 +1,21 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MovieCard } from "@/components/ui/movie-card";
 import { SearchFilters } from "@/components/ui/search-filters";
 import { MovieForm } from "@/components/ui/movie-form";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useMovies, type Movie } from "@/hooks/useMovies";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export function MovieGrid() {
+  const navigate = useNavigate();
   const { movies, loading, addMovie, updateMovie, deleteMovie } = useMovies();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("All Genres");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMovie, setEditingMovie] = useState<Movie | undefined>();
+  const [movieToDelete, setMovieToDelete] = useState<string | null>(null);
 
   // Filter movies based on search and genre
   const filteredMovies = movies.filter(movie => {
@@ -31,36 +36,35 @@ export function MovieGrid() {
     setIsFormOpen(true);
   };
 
-  const handleDeleteMovie = (id: string) => {
-    deleteMovie(id);
-    toast({
-      title: "Movie deleted",
-      description: "The movie has been successfully removed.",
-    });
+  const handleDeleteMovie = () => {
+    if (movieToDelete) {
+      deleteMovie(movieToDelete);
+      setMovieToDelete(null);
+      toast({
+        title: "Movie deleted successfully!",
+        description: "The movie has been removed from your collection.",
+      });
+    }
   };
 
   const handleSaveMovie = (movieData: Omit<Movie, 'id' | 'reviews'>) => {
     if (editingMovie) {
       updateMovie(editingMovie.id, movieData);
       toast({
-        title: "Movie updated",
+        title: "Movie updated successfully!",
         description: "The movie has been successfully updated.",
       });
     } else {
       addMovie(movieData);
       toast({
-        title: "Movie added",
+        title: "Movie added successfully!",
         description: "The movie has been successfully added.",
       });
     }
   };
 
   const handleViewMovie = (id: string) => {
-    // This would navigate to movie detail page in a real app
-    toast({
-      title: "View Movie",
-      description: "Movie detail view would open here.",
-    });
+    navigate(`/movie/${id}`);
   };
 
   if (loading) {
@@ -112,7 +116,7 @@ export function MovieGrid() {
                 <MovieCard
                   {...movie}
                   onEdit={handleEditMovie}
-                  onDelete={handleDeleteMovie}
+                  onDelete={(id) => setMovieToDelete(id)}
                   onView={handleViewMovie}
                 />
               </div>
@@ -126,6 +130,23 @@ export function MovieGrid() {
           onClose={() => setIsFormOpen(false)}
           onSave={handleSaveMovie}
         />
+
+        <AlertDialog open={!!movieToDelete} onOpenChange={() => setMovieToDelete(null)}>
+          <AlertDialogContent className="bg-cinema-dark border-cinema-purple/30">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Movie</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this movie? This action cannot be undone and will remove all associated reviews.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteMovie} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </section>
   );

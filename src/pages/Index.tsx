@@ -1,28 +1,19 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MovieHero } from "@/components/movie-hero";
-import { MovieGrid } from "@/components/movie-grid";
+import { Navbar } from "@/components/ui/navbar";
 
 const Index = () => {
-  const [showMovies, setShowMovies] = useState(false);
+  const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    setShowMovies(true);
-    // Smooth scroll to movies section
-    setTimeout(() => {
-      const moviesSection = document.getElementById('movies-section');
-      moviesSection?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    navigate("/movies");
   };
 
   return (
     <div className="min-h-screen bg-cinema-dark">
+      <Navbar />
       <MovieHero onGetStarted={handleGetStarted} />
-      
-      {showMovies && (
-        <div id="movies-section" className="bg-gradient-to-b from-cinema-dark to-cinema-darker">
-          <MovieGrid />
-        </div>
-      )}
     </div>
   );
 };

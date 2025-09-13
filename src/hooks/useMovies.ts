@@ -76,17 +76,47 @@ const sampleMovies: Movie[] = [
   }
 ];
 
+// LocalStorage key
+const STORAGE_KEY = 'movie-review-hub-movies';
+
+// Load movies from localStorage
+const loadMoviesFromStorage = (): Movie[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : sampleMovies;
+  } catch {
+    return sampleMovies;
+  }
+};
+
+// Save movies to localStorage
+const saveMoviesToStorage = (movies: Movie[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(movies));
+  } catch (error) {
+    console.error('Failed to save movies to localStorage:', error);
+  }
+};
+
 export function useMovies() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading
+    // Load movies from localStorage on component mount
     setTimeout(() => {
-      setMovies(sampleMovies);
+      const loadedMovies = loadMoviesFromStorage();
+      setMovies(loadedMovies);
       setLoading(false);
     }, 500);
   }, []);
+
+  // Save to localStorage whenever movies change
+  useEffect(() => {
+    if (!loading) {
+      saveMoviesToStorage(movies);
+    }
+  }, [movies, loading]);
 
   const addMovie = (movieData: Omit<Movie, 'id' | 'reviews'>) => {
     const newMovie: Movie = {
